@@ -1,0 +1,9 @@
+# build
+/target
+
+# environment
+.env
+data.json
+
+# IDE
+.vscode/**
