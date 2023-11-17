@@ -22,7 +22,7 @@ fn format_discord_message(activity: &Activity) -> WebhookMessage {
             &activity.media.title, &activity.media.site_url
         ),
         "plans to read" => format!(
-            "plans to watch [{}]({})",
+            "plans to read [{}]({})",
             &activity.media.title, &activity.media.site_url
         ),
         _ => format!(
