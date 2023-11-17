@@ -95,7 +95,7 @@ pub struct Activity {
 }
 
 impl AnilistClient<'_> {
-    pub fn new<'a>(http_client: &'a Client) -> AnilistClient<'a> {
+    pub fn new(http_client: &Client) -> AnilistClient<'_> {
         AnilistClient {
             client: http_client,
         }

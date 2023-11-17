@@ -13,13 +13,16 @@ impl Config {
         let user_ids = Config::read_user_ids();
         let webhook_url = Config::read_webhook_url();
 
-        Config { user_ids, webhook_url }
+        Config {
+            user_ids,
+            webhook_url,
+        }
     }
 
     fn read_user_ids() -> Vec<u32> {
         env::var("ANILIST_USER_IDS")
-            .and_then(|v| {
-                Ok(v.split(",")
+            .map(|v| {
+                v.split(',')
                     .filter_map(|v| match v.parse() {
                         Ok(id) => Some(id),
                         _ => {
@@ -27,9 +30,9 @@ impl Config {
                             None
                         }
                     })
-                    .collect())
+                    .collect()
             })
-            .unwrap_or(vec![])
+            .unwrap_or_default()
     }
 
     fn read_webhook_url() -> String {

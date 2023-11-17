@@ -63,7 +63,7 @@ pub struct Embed {
 }
 
 impl DiscordClient<'_> {
-    pub fn new<'a>(http_client: &'a Client) -> DiscordClient<'a> {
+    pub fn new(http_client: &Client) -> DiscordClient<'_> {
         DiscordClient {
             client: http_client,
         }

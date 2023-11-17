@@ -3,7 +3,7 @@ use std::error::Error;
 use anilist::{Activity, AnilistClient};
 use config::Config;
 use datastore::Datastore;
-use discord::{DiscordClient, Embed, WebhookMessage, Author};
+use discord::{Author, DiscordClient, Embed, WebhookMessage};
 use reqwest::blocking::Client;
 
 mod anilist;
@@ -37,24 +37,18 @@ fn format_discord_message(activity: &Activity) -> WebhookMessage {
     let timestamp =
         chrono::DateTime::from_timestamp(activity.created_at as i64, 0).map(|ts| ts.to_rfc3339());
 
-    let username = activity
-        .user
-        .name
-        .as_ref()
-        .map(|n| n.as_str())
-        .unwrap_or("?");
+    let username = activity.user.name.as_deref().unwrap_or("?");
 
     let embed = Embed {
         color: activity
             .media
             .cover_image
             .as_ref()
-            .map(|i| {
+            .and_then(|i| {
                 i.color
                     .as_ref()
-                    .map(|c| u8::from_str_radix(c.trim_start_matches("#"), 16).ok())
+                    .map(|c| u8::from_str_radix(c.trim_start_matches('#'), 16).ok())
             })
-            .flatten()
             .flatten(),
 
         title: Some(activity.media.title.clone()),
