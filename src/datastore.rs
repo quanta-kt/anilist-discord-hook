@@ -1,18 +1,10 @@
 use std::fs;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct Datastore {
     pub last_published_timestamp: u64,
-}
-
-impl Default for Datastore {
-    fn default() -> Self {
-        Datastore {
-            last_published_timestamp: 0,
-        }
-    }
 }
 
 impl Datastore {
@@ -26,7 +18,7 @@ impl Datastore {
             _ => Datastore::default(),
         }
     }
-    
+
     pub fn write(&self) {
         let json = serde_json::to_string(self).unwrap();
         fs::write("data.json", json).unwrap();
