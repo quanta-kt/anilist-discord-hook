@@ -94,6 +94,14 @@ pub struct Activity {
     pub media: Media,
 }
 
+#[flat_path]
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FetchActivitiesResponse {
+    #[flat_path("data.Page.activities")]
+    activities: Vec<Activity>,
+}
+
 impl AnilistClient<'_> {
     pub fn new(http_client: &Client) -> AnilistClient<'_> {
         AnilistClient {
@@ -114,14 +122,6 @@ impl AnilistClient<'_> {
             after: Option<i64>,
         }
 
-        #[flat_path]
-        #[derive(Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        struct Out {
-            #[flat_path("data.Page.activities")]
-            activities: Vec<Activity>,
-        }
-
         let variables = Variables { user_ids, after };
 
         let query = AnilistClient::build_query(QUERY_FETCH_ACTIVITIES, variables);
@@ -133,7 +133,9 @@ impl AnilistClient<'_> {
             .send()
             .await?;
 
-        resp.json::<Out>().await.map(|out| out.activities)
+        resp.json::<FetchActivitiesResponse>()
+            .await
+            .map(|out| out.activities)
     }
 
     fn build_query<T>(query: &str, variables: T) -> QueryPayload<T>
