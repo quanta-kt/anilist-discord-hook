@@ -3,6 +3,7 @@
 
 # environment
 .env
+Secrets*.toml
 
 # IDE
 .vscode/**
