@@ -1,10 +1,10 @@
-use std::error::Error;
-
 use anilist::{Activity, AnilistClient};
 use config::Config;
 use datastore::Datastore;
 use discord::{Author, DiscordClient, Embed, WebhookMessage};
 use reqwest::Client;
+use shuttle_runtime::tokio::time::sleep;
+use std::time::Duration;
 
 mod anilist;
 mod config;
@@ -81,29 +81,42 @@ fn format_discord_message(activity: &Activity) -> WebhookMessage {
     }
 }
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let http = Client::new();
-    let anilist = AnilistClient::new(&http);
-    let discord = DiscordClient::new(&http);
+struct Service;
 
-    let mut datastore = Datastore::read();
-    let config = Config::read();
+#[shuttle_runtime::async_trait]
+impl shuttle_runtime::Service for Service {
+    async fn bind(self, _addr: std::net::SocketAddr) -> Result<(), shuttle_runtime::Error> {
+        let http = Client::new();
+        let anilist = AnilistClient::new(&http);
+        let discord = DiscordClient::new(&http);
 
-    let activities = anilist
-        .fetch_activities(config.user_ids, Some(datastore.last_published_timestamp))
-        .await?;
+        loop {
+            let mut datastore = Datastore::read();
+            let config = Config::read();
 
-    for activity in activities.iter().rev() {
-        discord
-            .send(&config.webhook_url, format_discord_message(activity))
-            .await?;
+            let activities = anilist
+                .fetch_activities(config.user_ids, Some(datastore.last_published_timestamp))
+                .await
+                .unwrap();
+
+            for activity in activities.iter().rev() {
+                discord
+                    .send(&config.webhook_url, format_discord_message(activity))
+                    .await
+                    .unwrap();
+            }
+
+            if let Some(activity) = activities.get(0) {
+                datastore.last_published_timestamp = activity.created_at;
+                datastore.write();
+            }
+
+            sleep(Duration::from_secs(60 * 5)).await;
+        }
     }
+}
 
-    if let Some(activity) = activities.get(0) {
-        datastore.last_published_timestamp = activity.created_at;
-        datastore.write();
-    }
-
-    Ok(())
+#[shuttle_runtime::main]
+async fn shuttle_main() -> Result<Service, shuttle_runtime::Error> {
+    Ok(Service)
 }

@@ -12,4 +12,5 @@ reqwest = { version = "0.12.12", features = ["blocking", "json"] }
 serde = { version = "1.0.217", features = ["derive"] }
 serde_flat_path = "0.2.0"
 serde_json = "1.0.138"
-tokio = { version = "1.43.0", features = ["macros", "rt"] }
+shuttle-runtime = "0.51.0"
+shuttle-shared-db = { version = "0.51.0", features = ["postgres", "sqlx-native-tls"] }
