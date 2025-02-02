@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT\n            INTO LastPublishedTimestamp(last_published_timestamp, id)\n            VALUES($1, 0)\n            ON CONFLICT (id)\n            DO UPDATE\n                SET last_published_timestamp = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamp"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c09bff92b3a9efb536521549da1a95013ad6203cccad64199c1ffc4e76ac00bd"
+}
