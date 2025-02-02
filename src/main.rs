@@ -4,6 +4,7 @@ use datastore::Datastore;
 use discord::{Author, DiscordClient, Embed, WebhookMessage};
 use reqwest::Client;
 use shuttle_runtime::tokio::time::sleep;
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::time::Duration;
 
 mod anilist;
@@ -81,7 +82,9 @@ fn format_discord_message(activity: &Activity) -> WebhookMessage {
     }
 }
 
-struct Service;
+struct Service {
+    db: PgPool,
+}
 
 #[shuttle_runtime::async_trait]
 impl shuttle_runtime::Service for Service {
@@ -117,6 +120,14 @@ impl shuttle_runtime::Service for Service {
 }
 
 #[shuttle_runtime::main]
-async fn shuttle_main() -> Result<Service, shuttle_runtime::Error> {
-    Ok(Service)
+async fn shuttle_main(
+    #[shuttle_shared_db::Postgres] conn_string: String,
+) -> Result<Service, shuttle_runtime::Error> {
+    let db = PgPoolOptions::new()
+        .max_connections(1)
+        .connect(&conn_string)
+        .await
+        .unwrap();
+
+    Ok(Service { db })
 }
