@@ -4,7 +4,7 @@ use anilist::{Activity, AnilistClient};
 use config::Config;
 use datastore::Datastore;
 use discord::{Author, DiscordClient, Embed, WebhookMessage};
-use reqwest::blocking::Client;
+use reqwest::Client;
 
 mod anilist;
 mod config;
@@ -81,7 +81,8 @@ fn format_discord_message(activity: &Activity) -> WebhookMessage {
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), Box<dyn Error>> {
     let http = Client::new();
     let anilist = AnilistClient::new(&http);
     let discord = DiscordClient::new(&http);
@@ -89,11 +90,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut datastore = Datastore::read();
     let config = Config::read();
 
-    let activities =
-        anilist.fetch_activities(config.user_ids, Some(datastore.last_published_timestamp))?;
+    let activities = anilist
+        .fetch_activities(config.user_ids, Some(datastore.last_published_timestamp))
+        .await?;
 
     for activity in activities.iter().rev() {
-        discord.send(&config.webhook_url, format_discord_message(activity))?;
+        discord
+            .send(&config.webhook_url, format_discord_message(activity))
+            .await?;
     }
 
     if let Some(activity) = activities.get(0) {

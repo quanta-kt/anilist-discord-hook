@@ -1,4 +1,4 @@
-use reqwest::{blocking::Client, Error};
+use reqwest::{Client, Error};
 use serde::Serialize;
 
 pub struct DiscordClient<'a> {
@@ -69,11 +69,12 @@ impl DiscordClient<'_> {
         }
     }
 
-    pub fn send(&self, webhook_url: &str, message: WebhookMessage) -> Result<(), Error> {
+    pub async fn send(&self, webhook_url: &str, message: WebhookMessage) -> Result<(), Error> {
         self.client
             .post(webhook_url)
             .json(&message)
             .send()
+            .await
             .map(|_| ())
     }
 }
