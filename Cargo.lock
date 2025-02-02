@@ -52,7 +52,6 @@ name = "anilist-hook"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "dotenvy",
  "reqwest 0.12.12",
  "serde",
  "serde_flat_path",

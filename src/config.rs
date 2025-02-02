@@ -1,4 +1,4 @@
-use std::env;
+use shuttle_runtime::SecretStore;
 
 #[derive(Debug)]
 pub struct Config {
@@ -7,11 +7,9 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn read() -> Config {
-        let _ = dotenvy::dotenv();
-
-        let user_ids = Config::read_user_ids();
-        let webhook_url = Config::read_webhook_url();
+    pub fn read(secrets: &SecretStore) -> Config {
+        let user_ids = Config::read_user_ids(secrets);
+        let webhook_url = Config::read_webhook_url(secrets);
 
         Config {
             user_ids,
@@ -19,8 +17,9 @@ impl Config {
         }
     }
 
-    fn read_user_ids() -> Vec<u32> {
-        env::var("ANILIST_USER_IDS")
+    fn read_user_ids(secrets: &SecretStore) -> Vec<u32> {
+        secrets
+            .get("ANILIST_USER_IDS")
             .map(|v| {
                 v.split(',')
                     .filter_map(|v| match v.parse() {
@@ -35,7 +34,9 @@ impl Config {
             .unwrap_or_default()
     }
 
-    fn read_webhook_url() -> String {
-        env::var("DISCORD_WEBHOOK_URL").expect("DISCORD_WEBHOOK_URL must be set")
+    fn read_webhook_url(secrets: &SecretStore) -> String {
+        secrets
+            .get("DISCORD_WEBHOOK_URL")
+            .expect("DISCORD_WEBHOOK_URL must be set")
     }
 }

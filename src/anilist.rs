@@ -103,12 +103,12 @@ impl AnilistClient<'_> {
 
     pub async fn fetch_activities(
         &self,
-        user_ids: Vec<u32>,
+        user_ids: &[u32],
         after: Option<i64>,
     ) -> Result<Vec<Activity>, reqwest::Error> {
         #[derive(Serialize)]
-        struct Variables {
-            user_ids: Vec<u32>,
+        struct Variables<'a> {
+            user_ids: &'a [u32],
 
             #[serde(skip_serializing_if = "Option::is_none")]
             after: Option<i64>,
