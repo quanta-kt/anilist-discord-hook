@@ -4,7 +4,7 @@ use datastore::Datastore;
 use discord::{Author, DiscordClient, Embed, WebhookMessage};
 use reqwest::Client;
 use shuttle_runtime::tokio::time::sleep;
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
 
 mod anilist;
@@ -83,7 +83,7 @@ fn format_discord_message(activity: &Activity) -> WebhookMessage {
 }
 
 struct Service {
-    db: PgPool,
+    store: Datastore,
 }
 
 #[shuttle_runtime::async_trait]
@@ -94,11 +94,12 @@ impl shuttle_runtime::Service for Service {
         let discord = DiscordClient::new(&http);
 
         loop {
-            let mut datastore = Datastore::read();
             let config = Config::read();
+            let last_published_timestamp =
+                self.store.get_last_published_timestamp().await.unwrap_or(0);
 
             let activities = anilist
-                .fetch_activities(config.user_ids, Some(datastore.last_published_timestamp))
+                .fetch_activities(config.user_ids, Some(last_published_timestamp))
                 .await
                 .unwrap();
 
@@ -110,8 +111,10 @@ impl shuttle_runtime::Service for Service {
             }
 
             if let Some(activity) = activities.get(0) {
-                datastore.last_published_timestamp = activity.created_at;
-                datastore.write();
+                self.store
+                    .set_last_published_timestamp(activity.created_at)
+                    .await
+                    .unwrap();
             }
 
             sleep(Duration::from_secs(60 * 5)).await;
@@ -129,5 +132,7 @@ async fn shuttle_main(
         .await
         .unwrap();
 
-    Ok(Service { db })
+    let store = Datastore::new(db);
+
+    Ok(Service { store })
 }

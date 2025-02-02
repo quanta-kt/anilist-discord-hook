@@ -89,7 +89,7 @@ pub struct Activity {
     pub id: u32,
     pub status: String,
     pub progress: Option<String>,
-    pub created_at: u64,
+    pub created_at: i64,
     pub user: User,
     pub media: Media,
 }
@@ -104,14 +104,14 @@ impl AnilistClient<'_> {
     pub async fn fetch_activities(
         &self,
         user_ids: Vec<u32>,
-        after: Option<u64>,
+        after: Option<i64>,
     ) -> Result<Vec<Activity>, reqwest::Error> {
         #[derive(Serialize)]
         struct Variables {
             user_ids: Vec<u32>,
 
             #[serde(skip_serializing_if = "Option::is_none")]
-            after: Option<u64>,
+            after: Option<i64>,
         }
 
         #[flat_path]
