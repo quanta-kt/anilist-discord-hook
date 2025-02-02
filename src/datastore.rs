@@ -1,26 +1,46 @@
-use std::fs;
+use sqlx::{
+    types::time::{OffsetDateTime, PrimitiveDateTime, UtcOffset},
+    Pool, Postgres,
+};
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Default)]
 pub struct Datastore {
-    pub last_published_timestamp: u64,
+    db: Pool<Postgres>,
 }
 
 impl Datastore {
-    pub fn read() -> Datastore {
-        let Ok(contents) = fs::read_to_string("data.json") else {
-            return Datastore::default();
-        };
-
-        match serde_json::from_str(&contents) {
-            Ok(config) => config,
-            _ => Datastore::default(),
-        }
+    pub fn new(db: Pool<Postgres>) -> Datastore {
+        Datastore { db }
     }
 
-    pub fn write(&self) {
-        let json = serde_json::to_string(self).unwrap();
-        fs::write("data.json", json).unwrap();
+    pub async fn get_last_published_timestamp(&self) -> Option<i64> {
+        let row = sqlx::query!("SELECT last_published_timestamp FROM LastPublishedTimestamp")
+            .fetch_one(&self.db)
+            .await
+            .ok()?;
+
+        Some(
+            row.last_published_timestamp
+                .assume_offset(UtcOffset::UTC)
+                .unix_timestamp(),
+        )
+    }
+
+    pub async fn set_last_published_timestamp(&self, timestamp: i64) -> Result<(), sqlx::Error> {
+        let timestamp = OffsetDateTime::from_unix_timestamp(timestamp).unwrap();
+
+        sqlx::query!(
+            r#"
+            INSERT
+            INTO LastPublishedTimestamp(last_published_timestamp, id)
+            VALUES($1, 0)
+            ON CONFLICT (id)
+            DO UPDATE
+                SET last_published_timestamp = $1
+            "#,
+            PrimitiveDateTime::new(timestamp.date(), timestamp.time())
+        )
+        .execute(&self.db)
+        .await
+        .map(|_| ())
     }
 }
