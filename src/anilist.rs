@@ -1,4 +1,4 @@
-use reqwest::blocking::Client;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_flat_path::flat_path;
 
@@ -101,7 +101,7 @@ impl AnilistClient<'_> {
         }
     }
 
-    pub fn fetch_activities(
+    pub async fn fetch_activities(
         &self,
         user_ids: Vec<u32>,
         after: Option<u64>,
@@ -126,9 +126,14 @@ impl AnilistClient<'_> {
 
         let query = AnilistClient::build_query(QUERY_FETCH_ACTIVITIES, variables);
 
-        let resp = self.client.post(ANILIST_API_URL).json(&query).send()?;
+        let resp = self
+            .client
+            .post(ANILIST_API_URL)
+            .json(&query)
+            .send()
+            .await?;
 
-        resp.json::<Out>().map(|out| out.activities)
+        resp.json::<Out>().await.map(|out| out.activities)
     }
 
     fn build_query<T>(query: &str, variables: T) -> QueryPayload<T>
