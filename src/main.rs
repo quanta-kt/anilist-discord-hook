@@ -15,51 +15,51 @@ mod discord;
 fn format_discord_message(activity: &Activity) -> WebhookMessage {
     let description = match activity.status.as_str() {
         "dropped" => format!(
-            "dropped [{}]({})",
+            "Dropped [{}]({})",
             &activity.media.title, &activity.media.site_url
         ),
         "completed" => format!(
-            "completed [{}]({})",
+            "Completed [{}]({})",
             &activity.media.title, &activity.media.site_url
         ),
         "watched episode" => format!(
-            "watched episode {} of [{}]({})",
+            "Watched episode {} of [{}]({})",
             &activity.progress.as_deref().unwrap_or("?"),
             &activity.media.title,
             &activity.media.site_url,
         ),
         "rewatched episode" => format!(
-            "rewatched episode {} of [{}]({})",
+            "Rewatched episode {} of [{}]({})",
             &activity.progress.as_deref().unwrap_or("?"),
             &activity.media.title,
             &activity.media.site_url
         ),
         "plans to watch" => format!(
-            "plans to watch [{}]({})",
+            "Plans to watch [{}]({})",
             &activity.media.title, &activity.media.site_url
         ),
         "paused watching" => format!(
-            "paused watching [{}]({})",
+            "Paused watching [{}]({})",
             &activity.media.title, &activity.media.site_url,
         ),
         "read chapter" => format!(
-            "read chapter {} of [{}]({})",
+            "Read chapter {} of [{}]({})",
             &activity.progress.as_deref().unwrap_or("?"),
             &activity.media.title,
             &activity.media.site_url
         ),
         "reread chapter" => format!(
-            "read chapter {} of [{}]({})",
+            "Read chapter {} of [{}]({})",
             &activity.progress.as_deref().unwrap_or("?"),
             &activity.media.title,
             &activity.media.site_url
         ),
         "plans to read" => format!(
-            "plans to read [{}]({})",
+            "Plans to read [{}]({})",
             &activity.media.title, &activity.media.site_url
         ),
         "paused reading" => format!(
-            "paused reading [{}]({})",
+            "Paused reading [{}]({})",
             &activity.media.title, &activity.media.site_url,
         ),
         _ => format!(
