@@ -97,13 +97,9 @@ fn format_discord_message(activity: &Activity) -> WebhookMessage {
 
         description: Some(description),
 
-        image: activity
-            .media
-            .banner_image
-            .as_ref()
-            .map(|i| discord::Image { url: i.clone() }),
+        thumbnail: activity.media.cover_image.as_ref().map(|i| i.url.clone()),
 
-        thumbnail: None,
+        image: None,
         url: Some(activity.media.site_url.clone()),
         embed_type: "rich".to_string(),
 
