@@ -78,8 +78,6 @@ pub struct Media {
     pub site_url: String,
 
     pub cover_image: Option<CoverImage>,
-
-    pub banner_image: Option<String>,
 }
 
 #[flat_path]
