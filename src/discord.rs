@@ -51,7 +51,7 @@ pub struct Embed {
     pub thumbnail: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<u8>,
+    pub color: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
