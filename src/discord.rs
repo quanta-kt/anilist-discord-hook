@@ -1,5 +1,6 @@
 use reqwest::{Client, Error};
 use serde::Serialize;
+use serde_flat_path::flat_path;
 
 pub struct DiscordClient<'a> {
     client: &'a Client,
@@ -33,6 +34,7 @@ pub struct Author {
     pub icon_url: Option<String>,
 }
 
+#[flat_path]
 #[derive(Serialize, Debug)]
 pub struct Embed {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -47,6 +49,7 @@ pub struct Embed {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author: Option<Author>,
 
+    #[flat_path("thumbnail.url")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail: Option<String>,
 
