@@ -84,7 +84,7 @@ fn format_discord_message(activity: &Activity) -> WebhookMessage {
             .and_then(|i| {
                 i.color
                     .as_ref()
-                    .map(|c| u8::from_str_radix(c.trim_start_matches('#'), 16).ok())
+                    .map(|c| u32::from_str_radix(c.trim_start_matches('#'), 16).ok())
             })
             .flatten(),
 
