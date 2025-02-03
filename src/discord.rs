@@ -5,7 +5,7 @@ pub struct DiscordClient<'a> {
     client: &'a Client,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct WebhookMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
@@ -20,12 +20,12 @@ pub struct WebhookMessage {
     pub embeds: Option<Vec<Embed>>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct Image {
     pub url: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct Author {
     pub name: String,
 
@@ -33,7 +33,7 @@ pub struct Author {
     pub icon_url: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct Embed {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
