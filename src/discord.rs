@@ -44,9 +44,6 @@ pub struct Embed {
     pub description: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub image: Option<Image>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub author: Option<Author>,
 
     #[flat_path("thumbnail.url")]
