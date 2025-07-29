@@ -6,7 +6,7 @@ const ANILIST_API_URL: &str = "https://graphql.anilist.co/";
 
 const QUERY_FETCH_ACTIVITIES: &str = "
     query($user_ids: [Int], $after: Int) {
-      Page(perPage: 10) {
+      Page(perPage: 50) {
         activities(type: MEDIA_LIST, userId_in: $user_ids, sort: ID_DESC, createdAt_greater: $after) {
           ...on ListActivity {
             id
