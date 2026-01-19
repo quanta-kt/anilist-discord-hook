@@ -1,46 +1,45 @@
-use sqlx::{
-    types::time::{OffsetDateTime, PrimitiveDateTime, UtcOffset},
-    Pool, Postgres,
-};
+use std::error::Error;
+use std::fs::OpenOptions;
+use std::fs::File;
+use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
+use std::io::Write;
+
+const FILENAME: &'static str = "data";
 
 pub struct Datastore {
-    db: Pool<Postgres>,
+    file: File,
 }
 
 impl Datastore {
-    pub fn new(db: Pool<Postgres>) -> Datastore {
-        Datastore { db }
+    pub fn new() -> Datastore {
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .truncate(false)
+            .open(FILENAME)
+            .expect(&format!("cannot open file {}", FILENAME));
+
+        Datastore { file }
     }
 
-    pub async fn get_last_published_timestamp(&self) -> Option<i64> {
-        let row = sqlx::query!("SELECT last_published_timestamp FROM LastPublishedTimestamp")
-            .fetch_one(&self.db)
-            .await
-            .ok()?;
+    pub fn get_last_published_timestamp(&mut self) -> Option<i64> {
+        let mut buf = [0u8; 8];
 
-        Some(
-            row.last_published_timestamp
-                .assume_offset(UtcOffset::UTC)
-                .unix_timestamp(),
-        )
+        self.file.seek(SeekFrom::Start(0)).ok()?;
+        self.file.read_exact(&mut buf).ok()?;
+
+        Some(i64::from_le_bytes(buf))
     }
 
-    pub async fn set_last_published_timestamp(&self, timestamp: i64) -> Result<(), sqlx::Error> {
-        let timestamp = OffsetDateTime::from_unix_timestamp(timestamp).unwrap();
+    pub fn set_last_published_timestamp(&mut self, timestamp: i64) -> Result<(), Box<dyn Error>> {
+        self.file.seek(SeekFrom::Start(0))?;
+        let raw = timestamp.to_le_bytes();
+        self.file.write(&raw)?;
+        self.file.flush()?;
 
-        sqlx::query!(
-            r#"
-            INSERT
-            INTO LastPublishedTimestamp(last_published_timestamp, id)
-            VALUES($1, 0)
-            ON CONFLICT (id)
-            DO UPDATE
-                SET last_published_timestamp = $1
-            "#,
-            PrimitiveDateTime::new(timestamp.date(), timestamp.time())
-        )
-        .execute(&self.db)
-        .await
-        .map(|_| ())
+        Ok(())
     }
 }
+

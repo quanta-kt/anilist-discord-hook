@@ -3,9 +3,10 @@ use config::Config;
 use datastore::Datastore;
 use discord::{Author, DiscordClient, Embed, WebhookMessage};
 use reqwest::Client;
-use shuttle_runtime::{tokio::time::sleep, SecretStore};
-use sqlx::postgres::PgPoolOptions;
+use tokio::time::sleep;
+
 use std::time::Duration;
+use std::error::Error;
 
 mod anilist;
 mod config;
@@ -118,9 +119,8 @@ struct Service {
     config: Config,
 }
 
-#[shuttle_runtime::async_trait]
-impl shuttle_runtime::Service for Service {
-    async fn bind(self, _addr: std::net::SocketAddr) -> Result<(), shuttle_runtime::Error> {
+impl Service {
+    async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         let http = Client::new();
         let anilist = AnilistClient::new(&http);
         let discord = DiscordClient::new(&http);
@@ -129,7 +129,7 @@ impl shuttle_runtime::Service for Service {
 
         loop {
             let last_published_timestamp =
-                self.store.get_last_published_timestamp().await.unwrap_or(0);
+                self.store.get_last_published_timestamp().unwrap_or(0);
 
             let activities = anilist
                 .fetch_activities(&config.user_ids, Some(last_published_timestamp))
@@ -146,7 +146,6 @@ impl shuttle_runtime::Service for Service {
             if let Some(activity) = activities.get(0) {
                 self.store
                     .set_last_published_timestamp(activity.created_at)
-                    .await
                     .unwrap();
             }
 
@@ -155,19 +154,15 @@ impl shuttle_runtime::Service for Service {
     }
 }
 
-#[shuttle_runtime::main]
-async fn shuttle_main(
-    #[shuttle_shared_db::Postgres] conn_string: String,
-    #[shuttle_runtime::Secrets] secrets: SecretStore,
-) -> Result<Service, shuttle_runtime::Error> {
-    let db = PgPoolOptions::new()
-        .max_connections(1)
-        .connect(&conn_string)
-        .await
-        .unwrap();
 
-    let store = Datastore::new(db);
-    let config = Config::read(&secrets);
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let store = Datastore::new();
+    let config = Config::read();
 
-    Ok(Service { store, config })
+    let mut service = Service { store, config };
+    service.run().await?;
+
+    return Ok(())
 }
+
