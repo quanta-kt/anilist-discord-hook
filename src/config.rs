@@ -3,6 +3,7 @@ use dotenvy;
 #[derive(Debug)]
 pub struct Config {
     pub user_ids: Vec<u32>,
+    pub mal_usernames: Vec<String>,
     pub webhook_url: String,
 }
 
@@ -11,10 +12,12 @@ impl Config {
         dotenvy::dotenv().expect("Unable to load .env file");
 
         let user_ids = Config::read_user_ids();
+        let mal_usernames = Config::read_mal_usernames();
         let webhook_url = Config::read_webhook_url();
 
         Config {
             user_ids,
+            mal_usernames,
             webhook_url,
         }
     }
@@ -30,6 +33,17 @@ impl Config {
                             None
                         }
                     })
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    fn read_mal_usernames() -> Vec<String> {
+        dotenvy::var("MAL_USERNAMES")
+            .map(|v| {
+                v.split(',')
+                    .map(|s| s.trim().to_owned())
+                    .filter(|s| !s.is_empty())
                     .collect()
             })
             .unwrap_or_default()
