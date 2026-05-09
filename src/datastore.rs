@@ -17,6 +17,7 @@ impl Datastore {
         let file = OpenOptions::new()
             .read(true)
             .write(true)
+            .create(true)
             .truncate(false)
             .open(FILENAME)
             .expect(&format!("cannot open file {}", FILENAME));
