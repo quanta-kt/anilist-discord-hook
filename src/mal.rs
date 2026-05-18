@@ -1,37 +1,24 @@
 use chrono::DateTime;
 use reqwest::Client;
-use serde::Deserialize;
+use rss::Channel;
+use std::io::Cursor;
 
-const JIKAN_API_URL: &str = "https://api.jikan.moe/v4";
+const MAL_RSS_BASE: &str = "https://myanimelist.net/rss.php";
 
 pub struct MalClient<'a> {
     client: &'a Client,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct HistoryEntry {
-    pub entry: EntryInfo,
-    pub increment: i32,
-    pub date: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct EntryInfo {
-    #[serde(rename = "name")]
+pub struct RssEntry {
     pub title: String,
     pub url: String,
-    #[serde(rename = "type")]
-    pub media_type: String,
+    pub description: String,
+    pub pub_date: String,
 }
 
-#[derive(Deserialize)]
-struct HistoryResponse {
-    data: Vec<HistoryEntry>,
-}
-
-impl HistoryEntry {
+impl RssEntry {
     pub fn timestamp(&self) -> Option<i64> {
-        DateTime::parse_from_rfc3339(&self.date)
+        DateTime::parse_from_rfc2822(&self.pub_date)
             .ok()
             .map(|dt| dt.timestamp())
     }
@@ -48,10 +35,28 @@ impl MalClient<'_> {
         &self,
         username: &str,
         after: Option<i64>,
-    ) -> Result<Vec<HistoryEntry>, reqwest::Error> {
-        let url = format!("{}/users/{}/history", JIKAN_API_URL, username);
-        let resp = self.client.get(&url).send().await?;
-        let entries = resp.json::<HistoryResponse>().await?.data;
+    ) -> Result<Vec<RssEntry>, Box<dyn std::error::Error>> {
+        let url = format!("{}?type=rw&u={}", MAL_RSS_BASE, username);
+        let text = self.client.get(&url).send().await?.text().await?;
+        let channel = Channel::read_from(Cursor::new(text.as_bytes()))?;
+
+        let entries: Vec<RssEntry> = channel
+            .items()
+            .iter()
+            .filter_map(|item| {
+                let title = item.title()?.to_string();
+                let url = item.link()?.to_string();
+                let description = item.description()?.to_string();
+                let pub_date = item.pub_date()?.to_string();
+
+                Some(RssEntry {
+                    title,
+                    url,
+                    description,
+                    pub_date,
+                })
+            })
+            .collect();
 
         Ok(match after {
             Some(after_ts) => entries

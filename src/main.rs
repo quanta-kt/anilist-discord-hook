@@ -2,7 +2,7 @@ use anilist::{Activity, AnilistClient};
 use config::Config;
 use datastore::Datastore;
 use discord::{Author, DiscordClient, Embed, WebhookMessage};
-use mal::{HistoryEntry, MalClient};
+use mal::{MalClient, RssEntry};
 use reqwest::Client;
 use tokio::time::sleep;
 
@@ -116,33 +116,7 @@ fn format_discord_message(activity: &Activity) -> WebhookMessage {
     }
 }
 
-fn format_mal_discord_message(username: &str, entry: &HistoryEntry) -> WebhookMessage {
-    let description = match entry.entry.media_type.as_str() {
-        "anime" => match entry.increment {
-            1 => format!(
-                "Watched an episode of [{}]({})",
-                entry.entry.title, entry.entry.url
-            ),
-            n if n > 1 => format!(
-                "Watched {} episodes of [{}]({})",
-                n, entry.entry.title, entry.entry.url
-            ),
-            _ => format!("Updated [{}]({})", entry.entry.title, entry.entry.url),
-        },
-        "manga" => match entry.increment {
-            1 => format!(
-                "Read a chapter of [{}]({})",
-                entry.entry.title, entry.entry.url
-            ),
-            n if n > 1 => format!(
-                "Read {} chapters of [{}]({})",
-                n, entry.entry.title, entry.entry.url
-            ),
-            _ => format!("Updated [{}]({})", entry.entry.title, entry.entry.url),
-        },
-        _ => format!("Updated [{}]({})", entry.entry.title, entry.entry.url),
-    };
-
+fn format_mal_discord_message(username: &str, entry: &RssEntry) -> WebhookMessage {
     let timestamp = entry
         .timestamp()
         .and_then(|ts| chrono::DateTime::from_timestamp(ts, 0))
@@ -150,14 +124,14 @@ fn format_mal_discord_message(username: &str, entry: &HistoryEntry) -> WebhookMe
 
     let embed = Embed {
         color: Some(0x2E51A2),
-        title: Some(entry.entry.title.clone()),
+        title: Some(entry.title.clone()),
         author: Some(Author {
             name: username.to_owned(),
             icon_url: None,
         }),
-        description: Some(description),
+        description: Some(entry.description.clone()),
         thumbnail: None,
-        url: Some(entry.entry.url.clone()),
+        url: Some(entry.url.clone()),
         embed_type: "rich".to_string(),
         timestamp,
     };
@@ -203,7 +177,7 @@ impl Service {
             }
 
             if !config.mal_usernames.is_empty() {
-                let mut all_entries: Vec<(String, HistoryEntry)> = Vec::new();
+                let mut all_entries: Vec<(String, RssEntry)> = Vec::new();
                 for username in &config.mal_usernames {
                     let entries = mal.fetch_history(username, Some(last_ts)).await.unwrap();
                     for entry in entries {
