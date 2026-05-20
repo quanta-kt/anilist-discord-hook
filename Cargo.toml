@@ -13,4 +13,5 @@ rss = "2"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_flat_path = "0.2.0"
 serde_json = "1.0.138"
+sha2 = "0.10"
 tokio = { version = "1.49.0", features = ["macros", "rt"] }

@@ -3,6 +3,7 @@ use config::Config;
 use datastore::Datastore;
 use discord::{Author, DiscordClient, Embed, WebhookMessage};
 use mal::{MalClient, RssEntry};
+use mal_store::MalStore;
 use reqwest::Client;
 use tokio::time::sleep;
 
@@ -14,6 +15,7 @@ mod config;
 mod datastore;
 mod discord;
 mod mal;
+mod mal_store;
 
 fn format_discord_message(activity: &Activity) -> WebhookMessage {
     let description = match activity.status.as_str() {
@@ -179,10 +181,18 @@ impl Service {
             if !config.mal_usernames.is_empty() {
                 let mut all_entries: Vec<(String, RssEntry)> = Vec::new();
                 for username in &config.mal_usernames {
-                    let entries = mal.fetch_history(username, Some(last_ts)).await.unwrap();
-                    for entry in entries {
-                        all_entries.push((username.clone(), entry));
+                    let entries = mal.fetch_history(username).await.unwrap();
+                    let seen = MalStore::load(username);
+                    let current_hashes: Vec<String> =
+                        entries.iter().map(|e| e.entry_hash()).collect();
+
+                    for (entry, hash) in entries.into_iter().zip(current_hashes.iter()) {
+                        if !seen.contains(hash) {
+                            all_entries.push((username.clone(), entry));
+                        }
                     }
+
+                    MalStore::save(username, &current_hashes);
                 }
 
                 all_entries.sort_by_key(|(_, e)| e.timestamp().unwrap_or(0));

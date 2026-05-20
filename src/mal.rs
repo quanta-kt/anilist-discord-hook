@@ -1,6 +1,7 @@
 use chrono::DateTime;
 use reqwest::Client;
 use rss::Channel;
+use sha2::{Digest, Sha256};
 use std::io::Cursor;
 
 const MAL_RSS_BASE: &str = "https://myanimelist.net/rss.php";
@@ -22,6 +23,12 @@ impl RssEntry {
             .ok()
             .map(|dt| dt.timestamp())
     }
+
+    pub fn entry_hash(&self) -> String {
+        let input = format!("{}|{}|{}", self.url, self.description, self.pub_date);
+        let digest = Sha256::digest(input.as_bytes());
+        digest[..8].iter().map(|b| format!("{:02x}", b)).collect()
+    }
 }
 
 impl MalClient<'_> {
@@ -34,13 +41,12 @@ impl MalClient<'_> {
     pub async fn fetch_history(
         &self,
         username: &str,
-        after: Option<i64>,
     ) -> Result<Vec<RssEntry>, Box<dyn std::error::Error>> {
         let url = format!("{}?type=rw&u={}", MAL_RSS_BASE, username);
         let text = self.client.get(&url).send().await?.text().await?;
         let channel = Channel::read_from(Cursor::new(text.as_bytes()))?;
 
-        let entries: Vec<RssEntry> = channel
+        let entries = channel
             .items()
             .iter()
             .filter_map(|item| {
@@ -58,12 +64,6 @@ impl MalClient<'_> {
             })
             .collect();
 
-        Ok(match after {
-            Some(after_ts) => entries
-                .into_iter()
-                .filter(|e| e.timestamp().map(|ts| ts > after_ts).unwrap_or(false))
-                .collect(),
-            None => entries,
-        })
+        Ok(entries)
     }
 }
